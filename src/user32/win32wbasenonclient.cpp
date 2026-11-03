@@ -1412,11 +1412,7 @@ LONG Win32BaseWindow::HandleSysCommand(WPARAM wParam,POINT *pt32)
                     break;
                 *(VOID **)&ShellAboutA = (VOID *)GetProcAddress(hShell32, "ShellAboutA");
             }
-#ifdef DEBUG
-            ShellAboutA(Win32Hwnd,"Odin","Odin Beta -- [swt branch] - **experimental** - (dbg-bld)",0);
-#else
-            ShellAboutA(Win32Hwnd,"Odin","Odin Beta -- [swt branch] - **experimental** - (rel-bld)",0);
-#endif
+            ShellAboutA(Win32Hwnd,"Odin","Odin Beta",0);
         }
 #ifdef DEBUG
         //SvL: Do NOT turn this into a dprintf.

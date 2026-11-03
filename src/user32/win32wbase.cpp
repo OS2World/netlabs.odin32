@@ -47,6 +47,7 @@
 #include <winuser32.h>
 #include <custombuild.h>
 #include "win32wbase.h"
+extern "C" VOID WIN32API OdinFSArmExt(DWORD on);
 #include "win32wfake.h"
 #include "wndmsg.h"
 #include "oslibwin.h"
@@ -122,6 +123,7 @@ void Win32BaseWindow::Init()
   fIsDragDropActive= FALSE;
   fDirtyUpdateRegion = FALSE;
   fWindowLocked    = FALSE;
+  fFakeWindow      = FALSE;
 
   state            = STATE_INIT;
   windowNameA      = NULL;
@@ -219,9 +221,11 @@ Win32BaseWindow::~Win32BaseWindow()
         OSLibWinRemoveFromTasklist(hTaskList);
     }
 
-    OSLibWinSetVisibleRegionNotify(OS2Hwnd, FALSE);
-    OSLibWinSetWindowULong(OS2Hwnd, OFFSET_WIN32WNDPTR, 0);
-    OSLibWinSetWindowULong(OS2Hwnd, OFFSET_WIN32PM_MAGIC, 0);
+    if (!isFakeWindow()) {
+        OSLibWinSetVisibleRegionNotify(OS2Hwnd, FALSE);
+        OSLibWinSetWindowULong(OS2Hwnd, OFFSET_WIN32WNDPTR, 0);
+        OSLibWinSetWindowULong(OS2Hwnd, OFFSET_WIN32PM_MAGIC, 0);
+    }
 
     if(fDestroyAll) {
         dprintf(("Destroying window %x %s", getWindowHandle(), windowNameA));
@@ -1343,6 +1347,9 @@ ULONG Win32BaseWindow::MsgFormatFrame(WINDOWPOS *lpWndPos)
 
     newClientRect = rectClient;
     rc = SendNCCalcSize(TRUE, &newWindowRect,  &oldWindowRect, &client, lpWndPos, &newClientRect);
+    //a client rectangle can never be inverted (window smaller than its non-client area)
+    if(newClientRect.bottom < newClientRect.top) newClientRect.bottom = newClientRect.top;
+    if(newClientRect.right  < newClientRect.left) newClientRect.right  = newClientRect.left;
     rectClient = newClientRect; //must update rectClient here
 
     dprintf(("MsgFormatFrame: old client rect (%d,%d)(%d,%d), new client (%d,%d)(%d,%d)", client.left, client.top, client.right, client.bottom, rectClient.left, rectClient.top, rectClient.right, rectClient.bottom));
@@ -1445,12 +1452,6 @@ BOOL Win32BaseWindow::isFrameWindow()
 //******************************************************************************
 //******************************************************************************
 BOOL Win32BaseWindow::isDesktopWindow()
-{
-  return FALSE;
-}
-//******************************************************************************
-//******************************************************************************
-BOOL Win32BaseWindow::isFakeWindow()
 {
   return FALSE;
 }

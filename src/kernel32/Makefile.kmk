@@ -51,6 +51,10 @@ kernel32_SOURCES    = \
     lang.cpp \
     win32util.cpp \
     heap.cpp \
+    vistacompat.cpp \
+    win7compat.cpp \
+    iocp.cpp \
+    odintrace.cpp \
     heapstring.cpp \
     os2heap.cpp \
     vmutex.cpp \
@@ -159,5 +163,6 @@ kernel32_LIBS       = \
     $(PATH_STAGE_LIB)/unicode.lib \
     $(PATH_STAGE_LIB)/seh.lib \
     $(PATH_STAGE_LIB)/ntdll.lib
+
 
 include $(FILE_KBUILD_SUB_FOOTER)

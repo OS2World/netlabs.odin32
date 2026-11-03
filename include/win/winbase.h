@@ -10,39 +10,6 @@
 extern "C" {
 #endif
 
-///-------------------------------------------------------------------[swt-os2]
-typedef struct tagACTCTXA {
-    ULONG   cbSize;
-    DWORD   dwFlags;
-    LPCSTR  lpSource;
-    USHORT  wProcessorArchitecture;
-    LANGID  wLangId;
-    LPCSTR  lpAssemblyDirectory;
-    LPCSTR  lpResourceName;
-    LPCSTR  lpApplicationName;
-    HMODULE hModule;
-} ACTCTXA, *PACTCTXA;
-
-typedef struct tagACTCTXW {
-    ULONG   cbSize;
-    DWORD   dwFlags;
-    LPCWSTR lpSource;
-    USHORT  wProcessorArchitecture;
-    LANGID  wLangId;
-    LPCWSTR lpAssemblyDirectory;
-    LPCWSTR lpResourceName;
-    LPCWSTR lpApplicationName;
-    HMODULE hModule;
-} ACTCTXW, *PACTCTXW;
-
-DECL_WINELIB_TYPE_AW(ACTCTX)
-DECL_WINELIB_TYPE_AW(PACTCTX)
-
-typedef const ACTCTXA *PCACTCTXA;
-typedef const ACTCTXW *PCACTCTXW;
-DECL_WINELIB_TYPE_AW(PCACTCTX)
-///----------------------------------------------------------------------------
-
 typedef struct tagCOORD {
     INT16 x;
     INT16 y;
@@ -1270,11 +1237,7 @@ typedef struct {
         DWORD dwBuildNumber;
         DWORD dwPlatformId;
         CHAR szCSDVersion[128];
-//~ } OSVERSIONINFOA;
-///-------------------------------------------------------------------[swt-os2]
-/// From Wine::include/winnt.h
-} OSVERSIONINFOA, *POSVERSIONINFOA, *LPOSVERSIONINFOA;
-///----------------------------------------------------------------------------
+} OSVERSIONINFOA;
 
 typedef struct {
         DWORD dwOSVersionInfoSize;
@@ -1283,18 +1246,9 @@ typedef struct {
         DWORD dwBuildNumber;
         DWORD dwPlatformId;
         WCHAR szCSDVersion[128];
-//~ } OSVERSIONINFOW;
-///-------------------------------------------------------------------[swt-os2]
-/// From Wine::include/winnt.h
-} OSVERSIONINFOW, *POSVERSIONINFOW, *LPOSVERSIONINFOW, RTL_OSVERSIONINFOW, *PRTL_OSVERSIONINFOW;
-///----------------------------------------------------------------------------
+} OSVERSIONINFOW;
 
 DECL_WINELIB_TYPE_AW(OSVERSIONINFO)
-///-------------------------------------------------------------------[swt-os2]
-/// From Wine::include/winnt.h
-DECL_WINELIB_TYPE_AW(POSVERSIONINFO)
-DECL_WINELIB_TYPE_AW(LPOSVERSIONINFO)
-///----------------------------------------------------------------------------
 
 typedef struct _OSVERSIONINFOEXA {
     DWORD dwOSVersionInfoSize;
@@ -1305,16 +1259,7 @@ typedef struct _OSVERSIONINFOEXA {
     CHAR  szCSDVersion[128];
     WORD  wServicePackMajor;
     WORD  wServicePackMinor;
-    //~ WORD  wReserved[2];
-///-------------------------------------------------------------------[swt-os2]
-/// From Wine::include/winnt.h
-/// That's handy, to reserve an array of 2 WORDS, call it wReserved, then
-/// use some of the reserved space in a later definition and call the remaining
-/// byte also wReserved.
-	WORD wSuiteMask;
-	BYTE wProductType;  /// Should be named bProductType
-	BYTE wReserved;     /// Should be named bReserved
-///----------------------------------------------------------------------------
+    WORD  wReserved[2];
 } OSVERSIONINFOEXA, *POSVERSIONINFOEXA, *LPOSVERSIONINFOEXA;
 typedef struct _OSVERSIONINFOEXW {
     DWORD dwOSVersionInfoSize;
@@ -1325,18 +1270,8 @@ typedef struct _OSVERSIONINFOEXW {
     WCHAR szCSDVersion[128];
     WORD  wServicePackMajor;
     WORD  wServicePackMinor;
-    //~ WORD  wReserved[2];
-//~ } OSVERSIONINFOEXW, *POSVERSIONINFOEXW, *LPOSVERSIONINFOEXW;
-///-------------------------------------------------------------------[swt-os2]
-/// From Wine::include/winnt.h
-/// That's handy, to reserve an array of 2 WORDS, call it wReserved, then
-/// use some of the reserved space in a later definition and call the remaining
-/// byte also wReserved.
-	WORD wSuiteMask;
-	BYTE wProductType;  /// Should be named bProductType
-	BYTE wReserved;     /// Should be named bReserved
-} OSVERSIONINFOEXW, *POSVERSIONINFOEXW, *LPOSVERSIONINFOEXW, RTL_OSVERSIONINFOEXW, *PRTL_OSVERSIONINFOEXW;
-///----------------------------------------------------------------------------
+    WORD  wReserved[2];
+} OSVERSIONINFOEXW, *POSVERSIONINFOEXW, *LPOSVERSIONINFOEXW;
 
 DECL_WINELIB_TYPE_AW(OSVERSIONINFOEX)
 DECL_WINELIB_TYPE_AW(POSVERSIONINFOEX)
@@ -2270,8 +2205,8 @@ INT       WINAPI lstrcmpW(LPCWSTR,LPCWSTR);
 INT       WINAPI lstrcmpiA(LPCSTR,LPCSTR);
 INT       WINAPI lstrcmpiW(LPCWSTR,LPCWSTR);
 #define     lstrcmpi WINELIB_NAME_AW(lstrcmpi)
-int       WINAPI lstrncmpiA(LPCSTR, LPCSTR, size_t);
-int       WINAPI lstrncmpiW(LPCWSTR, LPCWSTR, size_t);
+int       WINAPI lstrncmpiA(LPCSTR, LPCSTR, int);
+int       WINAPI lstrncmpiW(LPCWSTR, LPCWSTR, int);
 #define     lstrncmpi WINELIB_NAME_AW(lstrncmpi)
 
 VOID        WINAPI SetLastError(DWORD);

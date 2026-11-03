@@ -8,9 +8,6 @@
  * Project Odin Software License can be found in LICENSE.TXT
  */
 
-//~ #undef  DBG_CON
-//~ #define DBG_CON
-
 #define  INCL_DOSMODULEMGR
 #define  INCL_DOSMISC
 #define  INCL_DOSPROCESS
@@ -21,7 +18,7 @@
 #include <string.h>
 #include <misc.h>
 #include <wprocess.h>
-#include "HandleManager.h"
+#include "handlemanager.h"
 #include "profile.h"
 #include <options.h>
 #include "initterm.h"
@@ -41,7 +38,7 @@
 #include "oslibdos.h"
 #include "osliblvm.h"
 #include <cpuhlp.h>
-#include <win32k.h>
+#include <Win32k.h>
 #include <initdll.h>
 #include <codepage.h>
 #include <process.h>
@@ -72,11 +69,6 @@ BOOL    fInit     = FALSE;
 BOOL    fWin32k   = FALSE;
 HMODULE imHandle = 0;
 char    szModName[ 256 ] = "";
-
-/// Exported dummy function to indicate swt-branch -- to be removed later.
-BOOL WINAPI odin32swt() {
-    return TRUE;
-}
 
 static ULONG DLL_InitKernel32_internal(ULONG hModule)
 {
@@ -255,7 +247,6 @@ static ULONG DLL_InitKernel32_internal(ULONG hModule)
 
 ULONG SYSTEM DLL_InitKernel32(ULONG hModule)
 {
-    __con_debug(2,"%s::%s@%08X(%08X)\n","KERNEL32",__FUNCTION__,DLL_InitKernel32,hModule);
     ULONG code = DLL_InitKernel32_internal(hModule);
 
     if (code == -1)
@@ -266,7 +257,6 @@ ULONG SYSTEM DLL_InitKernel32(ULONG hModule)
 
 void SYSTEM DLL_TermKernel32(ULONG hModule)
 {
-    __con_debug(2,"%s::%s@%08X(%08X)\n","KERNEL32",__FUNCTION__,DLL_TermKernel32,hModule);
     if (!fInit)
     {
         // The initialization sequence was not complete; attempting to
@@ -436,3 +426,4 @@ VOID APIENTRY ReportFatalDllInitError(PCSZ pszModName)
     ULONG dummy;
     DosWrite((HFILE)1, (PVOID)&msg, strlen(msg), &dummy);
 }
+

@@ -22,17 +22,6 @@ extern "C" {
 #define HCF_INDICATOR       0x00000020
 #define HCF_HOTKEYAVAILABLE 0x00000040
 
-///-------------------------------------------------------------------[swt-os2]
-typedef struct tagMENUBARINFO {
-  DWORD cbSize;
-  RECT  rcBar;
-  HMENU hMenu;
-  HWND  hwndMenu;
-  BOOL  fBarFocused:1;
-  BOOL  fFocused:1;
-} MENUBARINFO, *PMENUBARINFO, *LPMENUBARINFO;
-///----------------------------------------------------------------------------
-
 typedef struct tagHIGHCONTRASTA
 {
     UINT  cbSize;
@@ -1800,10 +1789,7 @@ typedef struct tagSCROLLBARINFO
     int   dxyLineButton;
     int   xyThumbTop;
     int   xyThumbBottom;
-    //~ int   bogus;
-///-------------------------------------------------------------------[swt-os2]
-    int   reserved;
-///----------------------------------------------------------------------------
+    int   bogus;
     DWORD rgstate[CCHILDREN_SCROLLBAR+1];
 } SCROLLBARINFO, *PSCROLLBARINFO, *LPSCROLLBARINFO;
 
@@ -3421,9 +3407,6 @@ HMONITOR    WINAPI MonitorFromPoint(POINT,DWORD);
 HMONITOR    WINAPI MonitorFromRect(LPCRECT,DWORD);
 HMONITOR    WINAPI MonitorFromWindow(HWND,DWORD);
 DWORD       WINAPI MsgWaitForMultipleObjects(DWORD,HANDLE*,BOOL,DWORD,DWORD);
-///-------------------------------------------------------------------[swt-os2]
-DWORD       WINAPI MsgWaitForMultipleObjectsEx(DWORD,HANDLE*,BOOL,DWORD,DWORD);
-///----------------------------------------------------------------------------
 BOOL      WINAPI PaintDesktop(HDC);
 BOOL      WINAPI PostThreadMessageA(DWORD, UINT, WPARAM, LPARAM);
 BOOL      WINAPI PostThreadMessageW(DWORD, UINT, WPARAM, LPARAM);
