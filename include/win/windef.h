@@ -26,71 +26,6 @@
 
 #include <basetsd.h>
 
-///-------------------------------------------------------------------[swt-os2]
-/// In Windows PSDK these are in 'specstrings.h'.
-/// In Wine these are in 'imagehlp.h' and 'dbghelp.h'.
-/// While 'imagehlp.h' exists in Odin32, it is not included by default.
-/// So, we'll put these here for now.
-/* A set of documentation macros (see also dbghelp.h) */
-#ifndef __deref_out
-# define __deref_out
-#endif
-#ifndef __deref_out_opt
-# define __deref_out_opt
-#endif
-#ifndef __deref_opt_out
-# define __deref_opt_out
-#endif
-#ifndef __in
-# define __in
-#endif
-#ifndef __in_opt
-# define __in_opt
-#endif
-#ifndef __in_bcount
-# define __in_bcount(x)
-#endif
-#ifndef __in_bcount_opt
-# define __in_bcount_opt(x)
-#endif
-#ifndef __in_ecount
-# define __in_ecount(x)
-#endif
-#ifndef __inout
-# define __inout
-#endif
-#ifndef __inout_opt
-# define __inout_opt
-#endif
-#ifndef __inout_bcount
-# define __inout_bcount(x)
-#endif
-#ifndef __inout_ecount
-# define __inout_ecount(x)
-#endif
-#ifndef __out
-# define __out
-#endif
-#ifndef __out_opt
-# define __out_opt
-#endif
-#ifndef __out_bcount
-# define __out_bcount(x)
-#endif
-#ifndef __out_bcount_opt
-# define __out_bcount_opt(x)
-#endif
-#ifndef __out_ecount
-# define __out_ecount(x)
-#endif
-#ifndef __out_ecount_opt
-# define __out_ecount_opt(x)
-#endif
-#ifndef __out_xcount
-# define __out_xcount(x)
-#endif
-///----------------------------------------------------------------------------
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -656,12 +591,8 @@ typedef LPCSTR LPCTSTR, PCTSTR;
 
 
 /* Define some empty macros for compatibility with Windows code. */
-// rousseau.201602131406
-// Why is this in a __WINE__ ifndef ?
-// Macro __WINE__ is defined when compiling gdi32 and thus gdiplus, and
-// gdiplus uses the 'IN' and 'OUT' stuff.
-// Disabled ifndef for now.
-///#ifndef __WINE__
+
+#ifndef __WINE__
 #define NEAR
 #define FAR
 #define near
@@ -671,7 +602,7 @@ typedef LPCSTR LPCTSTR, PCTSTR;
 #define IN
 #define OUT
 #define OPTIONAL
-///#endif  /* __WINE__ */
+#endif  /* __WINE__ */
 
 /* Macro for structure packing. */
 
@@ -755,6 +686,18 @@ typedef LPCSTR LPCTSTR, PCTSTR;
 #define __min(a,b) MIN(a,b)
 #ifndef RC_INVOKED
 #include <stdlib.h>
+#endif
+
+/* Odin/Wine code uses lowercase min()/max() extensively.  odin.h defines them,
+   but the <stdlib.h> pulled in just above (kLIBC/libstdc++ under C++) clobbers
+   the macros, so re-assert them here.  windef.h is the conventional Win32 home
+   for the MIN/MAX family and is reached by virtually every DLL source, making
+   this the single global fix.  Guarded so an existing definition wins. */
+#ifndef max
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef min
+#define min(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
 #if !defined(__WATCOMC__) || !defined(_MAX_PATH)

@@ -15,7 +15,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <os2win.h>
 #include "controls.h"
 #include "button.h"
@@ -44,6 +43,11 @@ static void BUTTON_DrawPushButton(HWND hwnd,HDC hDC,WORD action,BOOL pushedState
 static LRESULT BUTTON_LButtonDown(HWND hwnd,WPARAM wParam,LPARAM lParam);
 
 #define MAX_BTN_TYPE  12
+
+/* The Vista button types BS_SPLITBUTTON (12), BS_DEFSPLITBUTTON (13), BS_COMMANDLINK (14) and
+   BS_DEFCOMMANDLINK (15) are drawn and handled as plain (default) push buttons. Programs such as
+   Notepad++ use them in their dialogs and the dialog fails to open if the button cannot be created. */
+#define BTN_TYPE(s)   ((((s) & 0x0f) >= MAX_BTN_TYPE) ? ((s) & 1) : ((s) & 0x0f))
 
 static const WORD maxCheckState[MAX_BTN_TYPE] =
 {
@@ -109,7 +113,7 @@ static LRESULT BUTTON_GetDlgCode(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
 
-  switch (dwStyle & 0x0f)
+  switch (BTN_TYPE(dwStyle))
   {
     case BS_AUTOCHECKBOX:
     case BS_CHECKBOX:
@@ -139,7 +143,7 @@ static LRESULT BUTTON_Enable(HWND hwnd,WPARAM wParam,LPARAM lParam)
 
 ////  if ((dwStyle & BS_NOTIFY) && !wParam) BUTTON_SendNotify(hwnd,BN_DISABLE);
 
-  //PAINT_BUTTON(hwnd,dwStyle & 0x0f,ODA_DRAWENTIRE);
+  //PAINT_BUTTON(hwnd,BTN_TYPE(dwStyle),ODA_DRAWENTIRE);
   //SvL: 09/10/99 Force it to redraw properly
   InvalidateRect( hwnd, NULL, FALSE );
 
@@ -149,7 +153,7 @@ static LRESULT BUTTON_Enable(HWND hwnd,WPARAM wParam,LPARAM lParam)
 static LRESULT BUTTON_Create(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   BUTTONINFO* infoPtr;
-  DWORD style = GetWindowLongA(hwnd,GWL_STYLE) & 0x0f;
+  DWORD style = BTN_TYPE(GetWindowLongA(hwnd,GWL_STYLE));
 
   if (!hbitmapCheckBoxes)
   {
@@ -185,8 +189,8 @@ static LRESULT BUTTON_Destroy(HWND hwnd,WPARAM wParam,LPARAM lParam)
 
 static LRESULT BUTTON_EraseBkgnd(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
-  DWORD style = GetWindowLongA(hwnd,GWL_STYLE) & 0x0f;
-  //SvL: TODO: NT does something extra for ownerdrawn buttons; check this
+  DWORD style = BTN_TYPE(GetWindowLongA(hwnd,GWL_STYLE));
+  //SvL: TODO: NT does something extra for ownerdrawn buttons; check this 
   if(style == BS_OWNERDRAW) {
         return DefWindowProcA(hwnd, WM_ERASEBKGND, wParam, lParam);
   }
@@ -196,7 +200,7 @@ static LRESULT BUTTON_EraseBkgnd(HWND hwnd,WPARAM wParam,LPARAM lParam)
 static LRESULT BUTTON_Paint(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-  DWORD style = dwStyle & 0x0f;
+  DWORD style = BTN_TYPE(dwStyle);
 
 ////  if (dwStyle & BS_NOTIFY) BUTTON_SendNotify(hwnd,BN_PAINT);
 
@@ -216,7 +220,7 @@ static LRESULT BUTTON_Paint(HWND hwnd,WPARAM wParam,LPARAM lParam)
 static LRESULT BUTTON_LButtonDblClk(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-  DWORD style = dwStyle & 0x0f;
+  DWORD style = BTN_TYPE(dwStyle);
 
   if(dwStyle & BS_NOTIFY || style == BS_RADIOBUTTON ||
      style == BS_USERBUTTON || style == BS_OWNERDRAW)
@@ -230,7 +234,7 @@ static LRESULT BUTTON_LButtonDown(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   BUTTONINFO* infoPtr = (BUTTONINFO*)GetInfoPtr(hwnd);
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-  DWORD style = dwStyle & 0x0F;
+  DWORD style = BTN_TYPE(dwStyle);
 
   if (style == BS_GROUPBOX) return 0;
   SetCapture(hwnd);
@@ -247,7 +251,7 @@ static LRESULT BUTTON_LButtonUp(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   BUTTONINFO* infoPtr = (BUTTONINFO*)GetInfoPtr(hwnd);
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-  DWORD style = dwStyle & 0x0F;
+  DWORD style = BTN_TYPE(dwStyle);
   RECT rect;
   POINT pt;
 
@@ -266,7 +270,7 @@ static LRESULT BUTTON_LButtonUp(HWND hwnd,WPARAM wParam,LPARAM lParam)
   GetClientRect(hwnd,&rect);
   if (PtInRect(&rect,pt))
   {
-    switch(dwStyle & 0x0f)
+    switch(BTN_TYPE(dwStyle))
     {
       case BS_AUTOCHECKBOX:
         SendMessageA(hwnd,BM_SETCHECK,!(infoPtr->state & BUTTON_CHECKED),0);
@@ -324,7 +328,7 @@ static LRESULT BUTTON_MouseMove(HWND hwnd,WPARAM wParam,LPARAM lParam)
 
 static LRESULT BUTTON_NCHitTest(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
-  DWORD style = GetWindowLongA(hwnd,GWL_STYLE) & 0x0f;
+  DWORD style = BTN_TYPE(GetWindowLongA(hwnd,GWL_STYLE));
 
   if (style == BS_GROUPBOX) return HTTRANSPARENT;
 
@@ -338,7 +342,7 @@ static LRESULT BUTTON_SetText(HWND hwnd,WPARAM wParam,LPARAM lParam)
   LRESULT result = DefWindowProcA(hwnd,WM_SETTEXT,wParam,lParam);
 #ifdef __WIN32OS2__
   BUTTONINFO* infoPtr = (BUTTONINFO*)GetInfoPtr(hwnd);
-  if ((dwStyle & 0x0f) == BS_GROUPBOX) {
+  if ((BTN_TYPE(dwStyle)) == BS_GROUPBOX) {
     RECT rc;
     TEXTMETRICA tm;
     HDC  hdc = GetDC(hwnd);
@@ -365,7 +369,7 @@ static LRESULT BUTTON_SetText(HWND hwnd,WPARAM wParam,LPARAM lParam)
   }
 #endif
 
-  if (dwStyle & WS_VISIBLE) PAINT_BUTTON(hwnd,dwStyle & 0x0f,ODA_DRAWENTIRE);
+  if (dwStyle & WS_VISIBLE) PAINT_BUTTON(hwnd,BTN_TYPE(dwStyle),ODA_DRAWENTIRE);
 
   return result;
 }
@@ -376,7 +380,7 @@ static LRESULT BUTTON_SetFont(HWND hwnd,WPARAM wParam,LPARAM lParam)
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
 
 #ifdef __WIN32OS2__
-  if ((dwStyle & 0x0f) == BS_GROUPBOX && IsWindowVisible(hwnd)) {
+  if ((BTN_TYPE(dwStyle)) == BS_GROUPBOX && IsWindowVisible(hwnd)) {
     RECT rc;
     TEXTMETRICA tm;
     HDC  hdc = GetDC(hwnd);
@@ -404,7 +408,7 @@ static LRESULT BUTTON_SetFont(HWND hwnd,WPARAM wParam,LPARAM lParam)
 #endif
 
   infoPtr->hFont = (HFONT)wParam;
-  if (lParam && (dwStyle & WS_VISIBLE)) PAINT_BUTTON(hwnd,dwStyle & 0x0f,ODA_DRAWENTIRE);
+  if (lParam && (dwStyle & WS_VISIBLE)) PAINT_BUTTON(hwnd,BTN_TYPE(dwStyle),ODA_DRAWENTIRE);
 
   return 0;
 }
@@ -441,7 +445,7 @@ static LRESULT BUTTON_KeyUp(HWND hwnd,WPARAM wParam,LPARAM lParam)
     if (!(infoPtr->state & BUTTON_HIGHLIGHTED)) return 0;
     SendMessageA(hwnd,BM_SETSTATE,FALSE,0);
 
-    switch(dwStyle & 0x0f)
+    switch(BTN_TYPE(dwStyle))
     {
       case BS_AUTOCHECKBOX:
         SendMessageA(hwnd,BM_SETCHECK,!(infoPtr->state & BUTTON_CHECKED),0);
@@ -472,7 +476,7 @@ static LRESULT BUTTON_SetFocus(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   BUTTONINFO* infoPtr = (BUTTONINFO*)GetInfoPtr(hwnd);
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-  DWORD style = dwStyle & 0x0f;
+  DWORD style = BTN_TYPE(dwStyle);
 
   if (dwStyle & BS_NOTIFY) BUTTON_SendNotify(hwnd,BN_SETFOCUS);
 
@@ -495,7 +499,7 @@ static LRESULT BUTTON_KillFocus(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   BUTTONINFO* infoPtr = (BUTTONINFO*)GetInfoPtr(hwnd);
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-  DWORD style = dwStyle & 0x0f;
+  DWORD style = BTN_TYPE(dwStyle);
 
   if (dwStyle & BS_NOTIFY) BUTTON_SendNotify(hwnd,BN_KILLFOCUS);
 
@@ -531,17 +535,15 @@ static LRESULT BUTTON_Click(HWND hwnd,WPARAM wParam,LPARAM lParam)
 
 static LRESULT BUTTON_SetStyle(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
-  __con_debug(2,"USER32::BUTTON_SetStyle(hwnd=%08X,wParam=%08X,lParam=%08X\n",hwnd,wParam,lParam);
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE),newStyle;
 
-  if ((wParam & 0x0F) >= MAX_BTN_TYPE) return 0;
-  newStyle = (dwStyle & 0xFFFFFFF0) | (wParam & 0x0000000F);
-  __con_debug(2,"USER32::BUTTON_SetStyle(newStyle=%08X\n",newStyle);
+  if ((BTN_TYPE(wParam)) >= MAX_BTN_TYPE) return 0;
+  newStyle = (dwStyle & 0xFFFFFFF0) | (BTN_TYPE(wParam));
 
   if (newStyle != dwStyle)
   {
     SetWindowLongA(hwnd,GWL_STYLE,newStyle);
-    PAINT_BUTTON(hwnd,newStyle & 0x0F,ODA_DRAWENTIRE);
+    PAINT_BUTTON(hwnd,BTN_TYPE(newStyle),ODA_DRAWENTIRE);
   }
 
   return 0;
@@ -588,12 +590,12 @@ static LRESULT BUTTON_SetCheck(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   BUTTONINFO* infoPtr = (BUTTONINFO*)GetInfoPtr(hwnd);
   DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-  DWORD style = dwStyle & 0x0f;
+  DWORD style = BTN_TYPE(dwStyle);
 
   if (wParam > maxCheckState[style]) wParam = maxCheckState[style];
 #ifndef __WIN32OS2__
-  //Must clear WS_TABSTOP of control that is already disabled or else
-  //multiple control can have this style ((auto)radiobutton) and
+  //Must clear WS_TABSTOP of control that is already disabled or else 
+  //multiple control can have this style ((auto)radiobutton) and 
   //GetNextDlgTabItem will return the wrong one
   //Happens in Opera preferences dialog (multimedia) where all autoradio
   //buttons have the WS_TABSTOP style.
@@ -634,7 +636,7 @@ static LRESULT BUTTON_GetState(HWND hwnd,WPARAM wParam,LPARAM lParam)
 static LRESULT BUTTON_SetState(HWND hwnd,WPARAM wParam,LPARAM lParam)
 {
   BUTTONINFO* infoPtr = (BUTTONINFO*)GetInfoPtr(hwnd);
-  DWORD style = GetWindowLongA(hwnd,GWL_STYLE) & 0x0F;
+  DWORD style = BTN_TYPE(GetWindowLongA(hwnd,GWL_STYLE));
 
   if (wParam)
   {
@@ -777,16 +779,10 @@ static void PB_Paint( HWND hwnd, HDC hDC, WORD action )
 static INT BUTTON_GetTextFormat(DWORD dwStyle,DWORD dwExStyle,INT defHorz,INT defVert)
 {
   INT format = 0;
-  __con_debug(2,"USER32::BUTTON_GetTextFormat: dwStyle=%08X, dwExStyle=%08X, dh=%d, dv=%d\n",
-        dwStyle,dwExStyle,defHorz,defVert);
-  /*
-   * BS_CENTER is not a single bit-flag, but is actually BS_LEFT | BS_RIGHT.
-   * So we need an extra compare to distinguish it.
-   * TODO: Scan for more occurences like this and other multi-bit flags
-   */
-  if ((dwStyle & BS_CENTER) == BS_LEFT) format = DT_LEFT;
-  else if ((dwStyle & BS_CENTER) == BS_CENTER) format = DT_CENTER;
-  else if (((dwStyle & BS_RIGHT) == BS_RIGHT) || ((dwExStyle & WS_EX_RIGHT) == BS_RIGHT)) format = DT_RIGHT;
+
+  if (dwStyle & BS_LEFT) format = DT_LEFT;
+  else if (dwStyle & BS_CENTER) format = DT_CENTER;
+  else if ((dwStyle & BS_RIGHT) || (dwExStyle & WS_EX_RIGHT)) format = DT_RIGHT;
   else format = defHorz;
 
   if (dwStyle & BS_TOP) format |= DT_TOP;
@@ -809,21 +805,18 @@ static void BUTTON_DrawPushButton(
   WORD action,
   BOOL pushedState )
 {
-    __con_debug(2,"\n%s\n","USER32::BUTTON_DrawPushButton");
     RECT rc, focus_rect;
     HPEN hOldPen;
     HBRUSH hOldBrush;
     BUTTONINFO *infoPtr = (BUTTONINFO *)GetInfoPtr(hwnd);
     DWORD dwStyle = GetWindowLongA(hwnd,GWL_STYLE);
-    __con_debug(2,"USER32::BUTTON_DrawPushButton: dwStyle=%08X\n",dwStyle);
     int xBorderOffset, yBorderOffset;
     xBorderOffset = yBorderOffset = 0;
     INT textLen;
     char* text;
 
     GetClientRect( hwnd, &rc );
-    __con_debug(2,"USER32::BUTTON_DrawPushButton: l=%d, r=%d, t=%d, b=%d\n",
-        rc.left,rc.right,rc.top,rc.bottom);
+
       /* Send WM_CTLCOLOR to allow changing the font (the colors are fixed) */
     if (infoPtr->hFont) SelectObject( hDC, infoPtr->hFont );
     BUTTON_SEND_CTLCOLOR( hwnd, hDC );
@@ -831,18 +824,17 @@ static void BUTTON_DrawPushButton(
     hOldBrush =(HBRUSH)SelectObject(hDC,GetSysColorBrush(COLOR_BTNFACE));
     SetBkMode(hDC, TRANSPARENT);
 
-    if ((dwStyle & 0x000f) == BS_DEFPUSHBUTTON)
+    if ((BTN_TYPE(dwStyle)) == BS_DEFPUSHBUTTON)
     {
         Rectangle(hDC, rc.left, rc.top, rc.right, rc.bottom);
         InflateRect( &rc, -1, -1 );
     }
-    __con_debug(2,"(USER32::BUTTON_DrawPushButton: l=%d, r=%d, t=%d, b=%d\n",
-        rc.left,rc.right,rc.top,rc.bottom);
+
     UINT uState = DFCS_BUTTONPUSH;
 
     if (pushedState)
     {
-      if ( (dwStyle & 0x000f) == BS_DEFPUSHBUTTON )
+      if ( (BTN_TYPE(dwStyle)) == BS_DEFPUSHBUTTON )
         uState |= DFCS_FLAT;
       else
         uState |= DFCS_PUSHED;
@@ -852,8 +844,7 @@ static void BUTTON_DrawPushButton(
 
     DrawFrameControl( hDC, &rc, DFC_BUTTON, uState );
     InflateRect( &rc, -2, -2 );
-    __con_debug(2,"(USER32::BUTTON_DrawPushButton: l=%d, r=%d, t=%d, b=%d\n",
-        rc.left,rc.right,rc.top,rc.bottom);
+
     focus_rect = rc;
 
     if (pushedState)
@@ -861,20 +852,18 @@ static void BUTTON_DrawPushButton(
       rc.left += 2;  /* To position the text down and right */
       rc.top  += 2;
     }
-    __con_debug(2,"(USER32::BUTTON_DrawPushButton: l=%d, r=%d, t=%d, b=%d\n",
-        rc.left,rc.right,rc.top,rc.bottom);
+
 
     /* draw button label, if any:
      *
      * In win9x we don't show text if there is a bitmap or icon.
      * I don't know about win31 so I leave it as it was for win31.
-     * Dennis BjÃ¶rklund 12 Jul, 99
+     * Dennis Björklund 12 Jul, 99
      */
     textLen = GetWindowTextLengthA(hwnd);
     if ((textLen > 0) && (!(dwStyle & (BS_ICON|BS_BITMAP))))
     {
         INT format = BUTTON_GetTextFormat(dwStyle,GetWindowLongA(hwnd,GWL_EXSTYLE),DT_CENTER,DT_VCENTER);
-        __con_debug(2,"(USER32::BUTTON_DrawPushButton: format=%d\n",format);
 
         textLen++;
         text = (char*)malloc(textLen);
@@ -1084,8 +1073,8 @@ static void CB_Paint(HWND hwnd,HDC hDC,WORD action)
 	if (action == ODA_SELECT) FillRect( hDC, &rbox, hBrush );
 	else FillRect( hDC, &client, hBrush );
 
-        if (((dwStyle & 0x0f) == BS_RADIOBUTTON) ||
-            ((dwStyle & 0x0f) == BS_AUTORADIOBUTTON)) state = DFCS_BUTTONRADIO;
+        if (((BTN_TYPE(dwStyle)) == BS_RADIOBUTTON) ||
+            ((BTN_TYPE(dwStyle)) == BS_AUTORADIOBUTTON)) state = DFCS_BUTTONRADIO;
         else if (infoPtr->state & BUTTON_3STATE) state = DFCS_BUTTON3STATE;
         else state = DFCS_BUTTONCHECK;
 
@@ -1197,7 +1186,7 @@ static void GB_Paint(HWND hwnd,HDC hDC,WORD action)
       rc.left += 10;
 
       if (dwStyle & WS_DISABLED) {
-           DrawDisabledText(hDC,text,&rc,format);
+           DrawDisabledText(hDC,text,&rc,format); 
       }
       else
       {

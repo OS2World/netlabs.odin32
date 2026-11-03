@@ -20,6 +20,7 @@
 #include <odin.h>
 #include <odinwrap.h>
 #include <os2win.h>
+#include "odintrace.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -491,6 +492,22 @@ USHORT WIN32API SetWin32TIB(BOOL fForceSwitch)
     if(winteb) {
         win32tibsel = winteb->teb_sel;
 
+        //Window procedures are entered from PM with FS = OS/2 TIB, and some paths run
+        //application code before FS has been switched.  Win32 code reading fs:[0x2c]
+        //(the TLS pointer; MSVC thread-safe statics) would then read 0 and crash.
+        //Offset 0x2c is inside the OS/2 TIB selector's limit (0x30) and unused by OS/2,
+        //so publish THIS thread's TLS pointer there (must be done on the thread itself).
+        {
+            USHORT selCur = GetFS();
+            DWORD  tlsptr = (DWORD)winteb->tls_ptr, cur;
+            RestoreOS2FS();
+            __asm__ __volatile__("movl %%fs:0x2c, %0" : "=r"(cur));
+            if(cur != tlsptr) {
+                __asm__ __volatile__("movl %0, %%fs:0x2c" : : "r"(tlsptr) : "memory");
+            }
+            SetFS(selCur);
+        }
+
         //Restore our win32 FS selector
         return SetReturnFS(win32tibsel);
     }
@@ -553,6 +570,7 @@ VOID WIN32API ExitProcess(DWORD exitcode)
     HANDLE hThread = GetCurrentThread();
     TEB   *teb;
 
+    OdinTrace("ExitProcess", NULL, exitcode, (DWORD)__builtin_return_address(0));
     dprintf(("KERNEL32:  ExitProcess %d (time %x)", exitcode, GetCurrentTime()));
     dprintf(("KERNEL32:  ExitProcess FS = %x\n", GetFS()));
 
@@ -576,6 +594,7 @@ VOID WIN32API ExitProcess(DWORD exitcode)
     }
     threadListMutex.leave();
 
+    OdinTrace("EXIT-1-threads-lowered", NULL, 0, 0);
     HMDeviceCommClass::CloseOverlappedIOHandlers();
 
     //detach all dlls (LIFO order) before really unloading them; this
@@ -583,7 +602,9 @@ VOID WIN32API ExitProcess(DWORD exitcode)
     //memory of a dll that has just been freed)
     dprintf(("********************************************"));
     dprintf(("**** Detach process from all dlls -- START"));
+    OdinTrace("EXIT-2-detach-start", NULL, 0, 0);
     Win32DllBase::detachProcessFromAllDlls();
+    OdinTrace("EXIT-3-detach-done", NULL, 0, 0);
     dprintf(("**** Detach process from all dlls -- END"));
     dprintf(("********************************************"));
 
@@ -592,10 +613,12 @@ VOID WIN32API ExitProcess(DWORD exitcode)
         WinExe = NULL;
     }
 
+    OdinTrace("EXIT-4-winexe-deleted", NULL, 0, 0);
     //Note: Needs to be done after deleting WinExe (destruction of exe + dll objects)
     //Flush and delete all open memory mapped files
     Win32MemMap::deleteAll();
 
+    OdinTrace("EXIT-5-memmaps-deleted", NULL, 0, 0);
     //SvL: We must make sure no threads are still suspended (with SuspendThread)
     //     OS/2 seems to be unable to terminate the process otherwise (exitlist hang)
     threadListMutex.enter();
@@ -631,6 +654,7 @@ VOID WIN32API ExitProcess(DWORD exitcode)
     ProfilerTerminate();
 #endif /* PROFILE */
 
+    OdinTrace("EXIT-6-before-destroyteb", NULL, 0, 0);
     //Restore original OS/2 TIB selector
     teb = GetThreadTEB();
     if(teb) DestroyTEB(teb);
@@ -645,6 +669,7 @@ VOID WIN32API ExitProcess(DWORD exitcode)
 #ifndef DEBUG
     OSLibDisablePopups();
 #endif
+    OdinTrace("EXIT-7-before-O32_ExitProcess", NULL, 0, 0);
     O32_ExitProcess(exitcode);
 }
 //******************************************************************************
@@ -750,6 +775,7 @@ HINSTANCE WIN32API LoadLibraryA(LPCTSTR lpszLibFile)
     dprintf(("KERNEL32: LoadLibraryA(%s) --> LoadLibraryExA(lpszLibFile, 0, 0)",
              lpszLibFile));
     hDll = LoadLibraryExA(lpszLibFile, 0, 0);
+    OdinTrace("LoadLibraryA", (const char *)lpszLibFile, (DWORD)hDll, GetLastError());
     dprintf(("KERNEL32: LoadLibraryA(%s) returns 0x%x",
              lpszLibFile, hDll));
     return hDll;
@@ -806,6 +832,7 @@ HINSTANCE WIN32API LoadLibraryW(LPCWSTR lpszLibFile)
     dprintf(("KERNEL32: LoadLibraryW(%s) --> LoadLibraryExA(lpszLibFile, 0, 0)",
              pszAsciiLibFile));
     hDll = LoadLibraryExA(pszAsciiLibFile, NULL, 0);
+    OdinTrace("LoadLibraryW", pszAsciiLibFile, (DWORD)hDll, GetLastError());
     dprintf(("KERNEL32: LoadLibraryW(%s) returns 0x%x",
              pszAsciiLibFile, hDll));
     FreeAsciiString(pszAsciiLibFile);
@@ -1549,6 +1576,7 @@ ULONG InitCommandLine(const char *pszPeExe)
     PSZ     psz2;                       /* Temporary string pointer. */
     APIRET  rc;                         /* OS/2 return code. */
     BOOL    fQuotes;                    /* Flag used to remember if the exe filename should be in quotes. */
+    BOOL    fKLIBC;
     LPWSTR *argvW;
     int     i;
     ULONG   cb;
@@ -1633,12 +1661,44 @@ ULONG InitCommandLine(const char *pszPeExe)
         if (pib_pchcmd != NULL)
         {
             psz2 = pib_pchcmd + strlen(pib_pchcmd) + 1;
+#ifdef __KLIBC__
+            /* kLIBC spawn() detects if the process it starts is a kLIBC process
+             * and uses special hidden command line arguments to pass additional
+             * info to it which are then removed before passing arguments to
+             * main(). Since we don't have global argc/argv pointers in kLIBC,
+             * we can't access them here and have to cut out these hidden args
+             * Yes, it's implementation dependent -- needs to be changed when
+             * kLIBC 0.7 (which contains glibal argc/argv) comes out.
+             */
+            fKLIBC = strcmp(psz2, __KLIBC_ARG_SIGNATURE) == 0;
+            if (fKLIBC)
+                psz2 += strlen(psz2) + 1;
+#else
+            fKLIBC = FALSE;
+#endif
             while (*psz2 != '\0')
             {
-                register int cchTmp = strlen(psz2) + 1; /* + 1 is for terminator (psz2) and space (cch). */
-                psz2 += cchTmp;
-                cch += cchTmp;
+                /* if the first byte is a kLIBC flag, skip it */
+                if (fKLIBC)
+                    psz2++;
+                ULONG cchTmp = strlen(psz2);
+                BOOL fArgQuotes = fKLIBC ? strchr(psz2, ' ') != NULL : FALSE;
+                ULONG nSlashes = 0;
+                if (fKLIBC)
+                {
+                    /* calculate quotes to escape them with '\' */
+                    while (*psz2)
+                        if (*psz2++ == '"')
+                            ++nSlashes;
+                    ++psz2;
+                }
+                else
+                {
+                    psz2 += cchTmp + 1;
+                }
+                cch += cchTmp + 1 /* space */ + (fArgQuotes ? 2 : 0) + nSlashes;
             }
+            ++cch; /* terminating null */
         }
 
         /** @sketch
@@ -1667,32 +1727,40 @@ ULONG InitCommandLine(const char *pszPeExe)
         if (pib_pchcmd != NULL)
         {
             psz2 = pib_pchcmd + strlen(pib_pchcmd) + 1;
-
-#ifdef __KLIBC__
-            // kLIBC spawn() detects if the process it starts is a kLIBC process
-            // and uses special hidden command line arguments to pass additional
-            // info to it which are then removed before passing arguments to
-            // main(). Since we don't have global argc/argv pointers in kLIBC,
-            // we can't access them here and have to cut out these hidden args
-            // Yes, it's implementation dependent -- needs to be changed when
-            // kLIBC 0.7 (which contains glibal argc/argv) comes out.
-            bool isKLIBC = strcmp(psz2, __KLIBC_ARG_SIGNATURE) == 0;
-            if (isKLIBC)
+            /* See above */
+            if (fKLIBC)
                 psz2 += strlen(psz2) + 1;
-#endif
             while (*psz2 != '\0')
             {
-#ifdef __KLIBC__
-                // if the first byte is a kLIBC flag, skip it
-                if (isKLIBC)
+                /* if the first byte is a kLIBC flag, skip it */
+                if (fKLIBC)
                     psz2++;
-#endif
-                register int cchTmp = strlen(psz2) + 1; /* + 1 is for terminator (psz). */
+                ULONG cchTmp = strlen(psz2);
+                BOOL fArgQuotes = fKLIBC ? strchr(psz2, ' ') != NULL : FALSE;
                 *psz++ = ' ';           /* add space */
-                memcpy(psz, psz2, cchTmp);
-                psz2 += cchTmp;
-                psz += cchTmp - 1;
+                if (fArgQuotes)
+                    *psz++ = '"';
+                if (fKLIBC)
+                {
+                    while (*psz2)
+                    {
+                        /* escape quotes with '\' */
+                        if (*psz2 == '"')
+                            *psz++ = '\\';
+                        *psz++ = *psz2++;
+                    }
+                    psz2++;
+                }
+                else
+                {
+                    memcpy(psz, psz2, cchTmp);
+                    psz += cchTmp;
+                    psz2 += cchTmp + 1;
+                }
+                if (fArgQuotes)
+                    *psz++ = '"';
             }
+            *psz = '\0';
         }
     }
 
@@ -2097,6 +2165,60 @@ HMODULE WIN32API GetModuleHandleW(LPCWSTR lpwszModuleName)
     FreeAsciiString(astring);
 
   return(rc);
+}
+//******************************************************************************
+// GetModuleHandleExA/W (Windows XP+): GET_MODULE_HANDLE_EX_FLAG_PIN (1) and
+// GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT (2) are accepted; the reference
+// count is never changed (so PIN is a no-op as Odin never unloads on this path).
+// GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS (4): lpModuleName is an address.
+//******************************************************************************
+extern "C" BOOL WINAPI GetModuleHandleExA(DWORD dwFlags, LPCSTR lpModuleName, HMODULE *phModule)
+{
+    HMODULE hMod = 0;
+
+    if(phModule == NULL || (dwFlags & ~7) != 0 ||
+       (dwFlags & 3) == 3) {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+    *phModule = 0;
+    if(dwFlags & 4) {
+        Win32DllBase *pMod = Win32DllBase::findModuleByAddr((ULONG)lpModuleName);
+        if(pMod) {
+            hMod = pMod->getInstanceHandle();
+        }
+        else if(WinExe) {
+            ULONG base = (ULONG)WinExe->getInstanceHandle();
+            if((ULONG)lpModuleName >= base && (ULONG)lpModuleName < base + WinExe->getImageSize()) {
+                hMod = WinExe->getInstanceHandle();
+            }
+        }
+    }
+    else {
+        hMod = GetModuleHandleA(lpModuleName);
+    }
+    if(hMod == 0) {
+        SetLastError(ERROR_MOD_NOT_FOUND);
+        return FALSE;
+    }
+    *phModule = hMod;
+    SetLastError(ERROR_SUCCESS);
+    return TRUE;
+}
+//******************************************************************************
+//******************************************************************************
+extern "C" BOOL WINAPI GetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE *phModule)
+{
+    BOOL  rc;
+    char *astring = NULL;
+
+    if(!(dwFlags & 4) && lpModuleName != NULL) {
+        astring = UnicodeToAsciiString((LPWSTR)lpModuleName);
+        rc = GetModuleHandleExA(dwFlags, astring, phModule);
+        FreeAsciiString(astring);
+        return rc;
+    }
+    return GetModuleHandleExA(dwFlags, (LPCSTR)lpModuleName, phModule);
 }
 //******************************************************************************
 //Checks whether program is LX or PE
@@ -2848,6 +2970,7 @@ FARPROC WIN32API GetProcAddress(HMODULE hModule, LPCSTR lpszProc)
                 }
                 else    dprintf(("GetProcAddress %x %s not found!", hModule, lpszProc));
 #endif
+                OdinTrace("GetProcAddress-MISS", (ulAPIOrdinal <= 0xFFFF) ? "(ordinal)" : (const char *)lpszProc, (DWORD)hModule, ulAPIOrdinal);
                 SetLastError(ERROR_PROC_NOT_FOUND);
                 return 0;
         }
@@ -2859,6 +2982,7 @@ FARPROC WIN32API GetProcAddress(HMODULE hModule, LPCSTR lpszProc)
         return proc;
   }
   proc = (FARPROC)OSLibDosGetProcAddress(hModule, lpszProc);
+  if(proc == 0) OdinTrace("GetProcAddress-MISS-OS2", ((DWORD)lpszProc <= 0xFFFF) ? "(ordinal)" : (const char *)lpszProc, (DWORD)hModule, (DWORD)lpszProc);
   if(HIWORD(lpszProc))
         dprintf(("KERNEL32:  GetProcAddress %s from %X returned %X\n", lpszProc, hModule, proc));
   else  dprintf(("KERNEL32:  GetProcAddress %x from %X returned %X\n", lpszProc, hModule, proc));

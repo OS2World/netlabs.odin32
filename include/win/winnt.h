@@ -17,14 +17,6 @@
 #define	DLL_THREAD_ATTACH	2	/* attach new thread */
 #define	DLL_THREAD_DETACH	3	/* detach thread */
 
-// rousseau.201602141646
-// We will put this one here for the moment.
-// (Required by 'gdiplusmem.h')
-#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 3)))
-#define __WINE_ALLOC_SIZE(x) __attribute__((__alloc_size__(x)))
-#else
-#define __WINE_ALLOC_SIZE(x)
-#endif
 
 /* u.x.wProcessorArchitecture (NT) */
 #define PROCESSOR_ARCHITECTURE_INTEL	0
@@ -2780,11 +2772,6 @@ typedef struct _RTL_CRITICAL_SECTION_DEBUG
   DWORD EntryCount;
   DWORD ContentionCount;
   DWORD Spare[ 2 ];
-#else
-/* Watcom C does not like empty structures, Watcom C++ doesn't care */
-#if defined(__WATCOMC__) && !defined(__cplusplus)
-;
-#endif
 #endif
 } RTL_CRITICAL_SECTION_DEBUG, *PRTL_CRITICAL_SECTION_DEBUG, RTL_RESOURCE_DEBUG, *PRTL_RESOURCE_DEBUG;
 

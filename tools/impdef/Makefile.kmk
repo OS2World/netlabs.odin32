@@ -9,8 +9,11 @@ BLDPROGS           += impdef
 impdef_TEMPLATE     = OdinBin
 
 # @todo: the need of this for BLDPROGS looks like a kBuild bug to me
-impdef_INST         = bin/
+impdef_INST         = $(STAGE_BIN)
 impdef_INSTTYPE     = stage
+
+# libstdc++ (<string>) chokes on the lowercase min/max macros of include/incl_gcc/stdlib.h
+impdef_DEFS         = ODIN_NO_MINMAX
 
 impdef_INCS         = \
     ../common

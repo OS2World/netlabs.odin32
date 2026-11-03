@@ -19,7 +19,6 @@ include $(PATH_SUB_CURRENT)/kernel32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/ntdll/Makefile.kmk
 include $(PATH_SUB_CURRENT)/user32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/gdi32/Makefile.kmk
-include $(PATH_SUB_CURRENT)/gdiplus/Makefile.kmk
 include $(PATH_SUB_CURRENT)/imm32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/comctl32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/winmm/Makefile.kmk
@@ -44,6 +43,14 @@ include $(PATH_SUB_CURRENT)/dsound/Makefile.kmk
 include $(PATH_SUB_CURRENT)/crypt32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/ctl3d32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/dciman32/Makefile.kmk
+include $(PATH_SUB_CURRENT)/bcrypt/Makefile.kmk
+include $(PATH_SUB_CURRENT)/dwmapi/Makefile.kmk
+include $(PATH_SUB_CURRENT)/powrprof/Makefile.kmk
+include $(PATH_SUB_CURRENT)/winhttp/Makefile.kmk
+include $(PATH_SUB_CURRENT)/mswsock/Makefile.kmk
+include $(PATH_SUB_CURRENT)/sensapi/Makefile.kmk
+include $(PATH_SUB_CURRENT)/msimg32/Makefile.kmk
+include $(PATH_SUB_CURRENT)/dbghelp/Makefile.kmk
 include $(PATH_SUB_CURRENT)/ws2_32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/icmp/Makefile.kmk
 include $(PATH_SUB_CURRENT)/mpr/Makefile.kmk
@@ -74,7 +81,6 @@ include $(PATH_SUB_CURRENT)/tapi32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/testdrv/Makefile.kmk
 include $(PATH_SUB_CURRENT)/twain_32/Makefile.kmk
 include $(PATH_SUB_CURRENT)/urlmon/Makefile.kmk
-include $(PATH_SUB_CURRENT)/usp10/Makefile.kmk
 include $(PATH_SUB_CURRENT)/uxtheme/Makefile.kmk
 include $(PATH_SUB_CURRENT)/vdmdbg/Makefile.kmk
 include $(PATH_SUB_CURRENT)/wing32/Makefile.kmk

@@ -469,49 +469,6 @@ typedef struct
 struct _IMAGELIST;
 typedef struct _IMAGELIST *HIMAGELIST;
 
-///-------------------------------------------------------------------[swt-os2]
-/// From ReactOS::include/psdk/commctrl.h
-typedef struct {
-    HIMAGELIST himl;
-    RECT margin;
-    UINT uAlign;
-} BUTTON_IMAGELIST,*PBUTTON_IMAGELIST;
-///----------------------------------------------------------------------------
-
-///-------------------------------------------------------------------[swt-os2]
-typedef struct LVINSERTMARK
-{
-	UINT cbSize;
-	DWORD dwFlags;
-	int iItem;
-	DWORD dwReserved;
-} LVINSERTMARK, *PLVINSERTMARK;
-
-/* SysLink misc. */
-
-#define INVALID_LINK_INDEX  (-1)
-#define MAX_LINKID_TEXT     48
-#define L_MAX_URL_LENGTH    2084
-
-/* SysLink structures */
-
-typedef struct tagLITEM
-{
-  UINT mask;
-  int iLink;
-  UINT state;
-  UINT stateMask;
-  WCHAR szID[MAX_LINKID_TEXT];
-  WCHAR szUrl[L_MAX_URL_LENGTH];
-} LITEM, *PLITEM;
-
-typedef struct tagNMLINK
-{
-  NMHDR hdr;
-  LITEM item;
-} NMLINK, *PNMLINK;
-///----------------------------------------------------------------------------
-
 #define CLR_NONE         0xFFFFFFFF
 #define CLR_DEFAULT      0xFF000000
 #define CLR_HILIGHT      CLR_DEFAULT
@@ -1607,9 +1564,6 @@ typedef struct tagTOOLINFOA {
     HINSTANCE hinst;
     LPSTR lpszText;
     LPARAM lParam;
-///-------------------------------------------------------------------[swt-os2]
-    void *lpReserved;
-///----------------------------------------------------------------------------
 } TTTOOLINFOA, *LPTOOLINFOA, *PTOOLINFOA, *LPTTTOOLINFOA;
 
 typedef struct tagTOOLINFOW {
@@ -1621,9 +1575,6 @@ typedef struct tagTOOLINFOW {
     HINSTANCE hinst;
     LPWSTR lpszText;
     LPARAM lParam;
-///-------------------------------------------------------------------[swt-os2]
-    void *lpReserved;
-///----------------------------------------------------------------------------
 } TTTOOLINFOW, *LPTOOLINFOW, *PTOOLINFOW, *LPTTTOOLINFOW;
 
 #define TTTOOLINFO WINELIB_NAME_AW(TTTOOLINFO)
@@ -3237,9 +3188,6 @@ typedef INT (CALLBACK *PFNLVCOMPARE)(LPARAM, LPARAM, LPARAM);
 
 #define NMLVCUSTOMDRAW_V3_SIZE CCSIZEOF_STRUCT(NMLCUSTOMDRW, clrTextBk)
 
-///-------------------------------------------------------------------[swt-os2]
-/// Substituted the Wine structure, which is different in layout and size.
-/*
 typedef struct tagNMLVCUSTOMDRAW
 {
     NMCUSTOMDRAW nmcd;
@@ -3247,23 +3195,6 @@ typedef struct tagNMLVCUSTOMDRAW
     COLORREF clrTextBk;
     int iSubItem;
 } NMLVCUSTOMDRAW, *LPNMLVCUSTOMDRAW;
-*/
-typedef struct tagNMLVCUSTOMDRAW
-{
-    NMCUSTOMDRAW nmcd;
-    COLORREF clrText;
-    COLORREF clrTextBk;
-    int iSubItem;	/* (_WIN32_IE >= 0x0400) */
-    DWORD dwItemType;	/* (_WIN32_IE >= 0x560) */
-    COLORREF clrFace;   /* (_WIN32_IE >= 0x560) */
-    int iIconEffect;	/* (_WIN32_IE >= 0x560) */
-    int iIconPhase;	/* (_WIN32_IE >= 0x560) */
-    int iPartId;	/* (_WIN32_IE >= 0x560) */
-    int iStateId;	/* (_WIN32_IE >= 0x560) */
-    RECT rcText;	/* (_WIN32_IE >= 0x560) */
-    UINT uAlign;	/* (_WIN32_IE >= 0x560) */
-} NMLVCUSTOMDRAW, *LPNMLVCUSTOMDRAW;
-///----------------------------------------------------------------------------
 
 typedef struct tagNMLVCACHEHINT
 {

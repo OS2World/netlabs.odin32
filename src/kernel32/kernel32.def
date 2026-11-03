@@ -5,7 +5,7 @@ LIBRARY KERNEL32 INITINSTANCE TERMINSTANCE
 DATA MULTIPLE NONSHARED LOADONCALL
 CODE SHARED LOADONCALL
 
-DESCRIPTION 'Odin32 System DLL - Kernel32 (rel)'
+DESCRIPTION 'Odin32 System DLL - Kernel32'
 
 ;
 ; Segments are done with LDFLAGS (emxomfld limitation)
@@ -172,8 +172,6 @@ EXPORTS
      ReleaseThunkLock           = "_ReleaseThunkLock@4"           @48
      RestoreThunkLock           = "_RestoreThunkLock@4"           @49
      _ConfirmWin16Lock          = "__ConfirmWin16Lock@0"          @96
-
-    odin32swt                   = "_odin32swt@0"         @4000
 
      AddAtomA                   = "_AddAtomA@4"                    @50
      AddAtomW                   = "_AddAtomW@4"                    @102
@@ -1381,9 +1379,103 @@ EXPORTS
     DecodePointer              = "_DecodePointer@4"               @3529 NONAME
     EncodePointer              = "_EncodePointer@4"               @3530 NONAME
     RtlUniform                 = "_RtlUniform@4"                  @3531 NONAME
+    HeapSetInformation         = "_HeapSetInformation@16"         @3532 NONAME
+    HeapQueryInformation       = "_HeapQueryInformation@20"       @3533 NONAME
+    GetModuleHandleExA         = "_GetModuleHandleExA@12"         @3534 NONAME
+    GetModuleHandleExW         = "_GetModuleHandleExW@12"         @3535 NONAME
+    GetTickCount64                     = "_GetTickCount64@0" @3536 NONAME
+    GetProductInfo                     = "_GetProductInfo@20" @3537 NONAME
+    InitializeCriticalSectionEx        = "_InitializeCriticalSectionEx@12" @3538 NONAME
+    InitializeSRWLock                  = "_InitializeSRWLock@4" @3539 NONAME
+    AcquireSRWLockExclusive            = "_AcquireSRWLockExclusive@4" @3540 NONAME
+    ReleaseSRWLockExclusive            = "_ReleaseSRWLockExclusive@4" @3541 NONAME
+    TryAcquireSRWLockExclusive         = "_TryAcquireSRWLockExclusive@4" @3542 NONAME
+    AcquireSRWLockShared               = "_AcquireSRWLockShared@4" @3543 NONAME
+    ReleaseSRWLockShared               = "_ReleaseSRWLockShared@4" @3544 NONAME
+    TryAcquireSRWLockShared            = "_TryAcquireSRWLockShared@4" @3545 NONAME
+    InitializeConditionVariable        = "_InitializeConditionVariable@4" @3546 NONAME
+    WakeConditionVariable              = "_WakeConditionVariable@4" @3547 NONAME
+    WakeAllConditionVariable           = "_WakeAllConditionVariable@4" @3548 NONAME
+    SleepConditionVariableSRW          = "_SleepConditionVariableSRW@16" @3549 NONAME
+    SleepConditionVariableCS           = "_SleepConditionVariableCS@12" @3550 NONAME
+    InitOnceInitialize                 = "_InitOnceInitialize@4" @3551 NONAME
+    InitOnceBeginInitialize            = "_InitOnceBeginInitialize@16" @3552 NONAME
+    InitOnceComplete                   = "_InitOnceComplete@12" @3553 NONAME
+    InitOnceExecuteOnce                = "_InitOnceExecuteOnce@16" @3554 NONAME
+    FlsAlloc                           = "_FlsAlloc@4" @3555 NONAME
+    FlsGetValue                        = "_FlsGetValue@4" @3556 NONAME
+    FlsSetValue                        = "_FlsSetValue@8" @3557 NONAME
+    FlsFree                            = "_FlsFree@4" @3558 NONAME
+    CreateThreadpoolWork               = "_CreateThreadpoolWork@12" @3559 NONAME
+    SubmitThreadpoolWork               = "_SubmitThreadpoolWork@4" @3560 NONAME
+    WaitForThreadpoolWorkCallbacks     = "_WaitForThreadpoolWorkCallbacks@8" @3561 NONAME
+    CloseThreadpoolWork                = "_CloseThreadpoolWork@4" @3562 NONAME
+    FreeLibraryWhenCallbackReturns     = "_FreeLibraryWhenCallbackReturns@8" @3563 NONAME
+    CompareStringOrdinal               = "_CompareStringOrdinal@20" @3564 NONAME
+    CompareStringEx                    = "_CompareStringEx@36" @3565 NONAME
+    LCMapStringEx                      = "_LCMapStringEx@36" @3566 NONAME
+    GetLocaleInfoEx                    = "_GetLocaleInfoEx@16" @3567 NONAME
+    GetDateFormatEx                    = "_GetDateFormatEx@28" @3568 NONAME
+    GetTimeFormatEx                    = "_GetTimeFormatEx@24" @3569 NONAME
+    GetFinalPathNameByHandleW          = "_GetFinalPathNameByHandleW@16" @3570 NONAME
+    FindFirstStreamW                   = "_FindFirstStreamW@16" @3571 NONAME
+    GetApplicationRestartSettings      = "_GetApplicationRestartSettings@16" @3572 NONAME
+    RegisterApplicationRestart         = "_RegisterApplicationRestart@8" @3573 NONAME
+    UnregisterApplicationRestart       = "_UnregisterApplicationRestart@0" @3574 NONAME
+    QueryFullProcessImageNameW         = "_QueryFullProcessImageNameW@16" @3575 NONAME
+    Process32FirstW                    = "_Process32FirstW@8" @3576 NONAME
+    Process32NextW                     = "_Process32NextW@8" @3577 NONAME
+    ReadDirectoryChangesW              = "_ReadDirectoryChangesW@32" @3578 NONAME
+    GetFileInformationByHandleEx       = "_GetFileInformationByHandleEx@16" @3579 NONAME
+    ReplaceFileW                       = "_ReplaceFileW@24" @3580 NONAME
 
     ___seh_handler_win32                                          @3600 NONAME
     "_ForceWin32TIB@0"                                            @3601 NONAME
     ___seh_handler                                                @3602 NONAME
 
     interlocked_cmpxchg64     = "_interlocked_cmpxchg64"    @3603
+    OdinTraceExt                       = "_OdinTraceExt@12" @3590
+    OdinFSCheckExt                     = "_OdinFSCheckExt@8" @3591
+    OdinFSArmExt                       = "_OdinFSArmExt@4" @3592
+    OdinFSInstrExt                     = "_OdinFSInstrExt@12" @3593
+    MoveFileWithProgressW              = "_MoveFileWithProgressW@20" @3581
+    CreateHardLinkW                    = "_CreateHardLinkW@12" @3582
+    IsThreadAFiber                     = "_IsThreadAFiber@0" @3610 NONAME
+    TzSpecificLocalTimeToSystemTime    = "_TzSpecificLocalTimeToSystemTime@12" @3611 NONAME
+    GetDynamicTimeZoneInformation      = "_GetDynamicTimeZoneInformation@4" @3612 NONAME
+    GlobalMemoryStatusEx               = "_GlobalMemoryStatusEx@4" @3613 NONAME
+    GetLargePageMinimum                = "_GetLargePageMinimum@0" @3614 NONAME
+    GetNumaHighestNodeNumber           = "_GetNumaHighestNodeNumber@4" @3615 NONAME
+    GetNumaNodeProcessorMask           = "_GetNumaNodeProcessorMask@8" @3616 NONAME
+    VirtualAllocExNuma                 = "_VirtualAllocExNuma@24" @3617 NONAME
+    IsWow64Process                     = "_IsWow64Process@8" @3618 NONAME
+    ProcessIdToSessionId               = "_ProcessIdToSessionId@8" @3619 NONAME
+    GetProcessId                       = "_GetProcessId@4" @3620 NONAME
+    GetCurrentProcessorNumber          = "_GetCurrentProcessorNumber@0" @3621 NONAME
+    FlushProcessWriteBuffers           = "_FlushProcessWriteBuffers@0" @3622 NONAME
+    GetConsoleWindow                   = "_GetConsoleWindow@0" @3623 NONAME
+    GetComputerNameExA                 = "_GetComputerNameExA@12" @3624 NONAME
+    GetGeoInfoA                        = "_GetGeoInfoA@20" @3625 NONAME
+    GetUserGeoID                       = "_GetUserGeoID@4" @3626 NONAME
+    K32EnumProcessModules              = "_K32EnumProcessModules@16" @3627 NONAME
+    K32GetModuleFileNameExA            = "_K32GetModuleFileNameExA@16" @3628 NONAME
+    K32GetModuleInformation            = "_K32GetModuleInformation@16" @3629 NONAME
+    K32GetProcessMemoryInfo            = "_K32GetProcessMemoryInfo@12" @3630 NONAME
+    RtlCaptureStackBackTrace           = "_RtlCaptureStackBackTrace@16" @3631 NONAME
+    CreateEventExW                     = "_CreateEventExW@16" @3632 NONAME
+    CreateSemaphoreExW                 = "_CreateSemaphoreExW@24" @3633 NONAME
+    GetQueuedCompletionStatusEx        = "_GetQueuedCompletionStatusEx@24" @3634 NONAME
+    SetFileCompletionNotificationModes = "_SetFileCompletionNotificationModes@8" @3635 NONAME
+    SetFileInformationByHandle         = "_SetFileInformationByHandle@16" @3636 NONAME
+    ReOpenFile                         = "_ReOpenFile@16" @3637 NONAME
+    FindNextStreamW                    = "_FindNextStreamW@8" @3638 NONAME
+    CreateSymbolicLinkW                = "_CreateSymbolicLinkW@12" @3639 NONAME
+    CreateThreadpoolTimer              = "_CreateThreadpoolTimer@12" @3640 NONAME
+    SetThreadpoolTimer                 = "_SetThreadpoolTimer@16" @3641 NONAME
+    WaitForThreadpoolTimerCallbacks    = "_WaitForThreadpoolTimerCallbacks@8" @3642 NONAME
+    CloseThreadpoolTimer               = "_CloseThreadpoolTimer@4" @3643 NONAME
+    CreateThreadpoolWait               = "_CreateThreadpoolWait@12" @3644 NONAME
+    SetThreadpoolWait                  = "_SetThreadpoolWait@12" @3645 NONAME
+    CloseThreadpoolWait                = "_CloseThreadpoolWait@4" @3646 NONAME
+    VirtualAllocEx                     = "_VirtualAllocEx@20" @3647 NONAME
+    VirtualFreeEx                      = "_VirtualFreeEx@16" @3648 NONAME

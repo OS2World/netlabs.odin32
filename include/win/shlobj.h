@@ -158,11 +158,7 @@ typedef struct _SHELLEXECUTEINFOA
         union
         { HANDLE hIcon;
           HANDLE hMonitor;
-        //~ } u;
-///-------------------------------------------------------------------[swt-os2]
-/// From Wine::include/shellapi.h
-        } DUMMYUNIONNAME;
-///----------------------------------------------------------------------------
+        } u;
         HANDLE hProcess;
 } SHELLEXECUTEINFOA, *LPSHELLEXECUTEINFOA;
 
@@ -184,11 +180,7 @@ typedef struct _SHELLEXECUTEINFOW
         union
         { HANDLE hIcon;
           HANDLE hMonitor;
-        //~ } u;
-///-------------------------------------------------------------------[swt-os2]
-/// From Wine::include/shellapi.h
-        } DUMMYUNIONNAME;
-///----------------------------------------------------------------------------
+        } u;
         HANDLE hProcess;
 } SHELLEXECUTEINFOW, *LPSHELLEXECUTEINFOW;
 

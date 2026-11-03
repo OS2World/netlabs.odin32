@@ -193,15 +193,11 @@ endef
 #
 # Add support for MASM to the GCC compiler
 #
+TOOL_GXX3OMF_MASM                   = $(PATH_TOOL_ALP)
+TOOL_GXX3OMF_MASMFLAGS              = -Mb
 TOOL_GXX3OMF_COMPILE_MASM_OUTPUT    = $(outbase).lst
 TOOL_GXX3OMF_COMPILE_MASM_DEPEND    =
 TOOL_GXX3OMF_COMPILE_MASM_DEPORD    =
-
-ifn1of ($(USE_JWASM),1 y yes Y Yes t true T True)
-# Alp
-# Can crash when environment is too large.
-TOOL_GXX3OMF_MASM                   = $(PATH_TOOL_ALP)
-TOOL_GXX3OMF_MASMFLAGS              = -Mb
 define TOOL_GXX3OMF_COMPILE_MASM_CMDS
 	$(QUIET)$(TOOL_GXX3OMF_MASM) -D:__GNUC__ -D:__EMX__\
 		$(flags) $(addsuffix /,$(addprefix -I:, $(incs))) $(addprefix -D:, $(defs))\
@@ -210,21 +206,6 @@ define TOOL_GXX3OMF_COMPILE_MASM_CMDS
 		-Fd:$(dep)\
 		-Fo:$(obj)
 endef
-else
-# JWasm
-# Source needs to be last otherwise -Fo drops path. (v2.06)
-$(info Note: Using JWasm as the assembler)
-TOOL_GXX3OMF_MASM                   = $(PATH_TOOL_JWASM)
-TOOL_GXX3OMF_MASMFLAGS              = -q -9
-define TOOL_GXX3OMF_COMPILE_MASM_CMDS
-	$(QUIET)$(TOOL_GXX3OMF_MASM) -D__GNUC__ -D__EMX__\
-		$(flags) $(addsuffix /,$(addprefix -I, $(incs))) $(addprefix -D, $(defs))\
-		-Fl$(outbase).lst\
-		-Fw$(outbase).err\
-		-Fo$(obj)\
-		$(source)
-endef
-endif
 
 #
 # Add support for DEF file bldlevel info generator to the GCC compiler
@@ -257,7 +238,19 @@ TEMPLATE_OdinCxx_USES       = Extra
 TEMPLATE_OdinCxx_TOOL       = GXX3OMF
 TEMPLATE_OdinCxx_INCS       = $(PATH_ROOT)/include/win $(PATH_ROOT)/include $(PATH_ROOT)/include/incl_gcc
 TEMPLATE_OdinCxx_DEFS       = USE_OS2_TOOLKIT_HEADERS OS2EMX_PLAIN_CHAR \
-                              __WIN32OS2__ __i386__
+                              __WIN32OS2__ __i386__ \
+                              INCL_32 _syscall=_System
+# ^ GCC 9.2 un-rot for the OS/2 Toolkit headers (two coupled fixes):
+#   * INCL_32 forces os2def.h down its 32-bit branch, so the obsolete 16-bit
+#     os2def16.h/bsedos16.h (with their _far/_near/_pascal qualifiers) are NOT
+#     included at all, and the real 32-bit API surface the tools need
+#     (DosQueryFileInfo, FILESTATUS4, PCSZ, ...) is declared.
+#   * os2def.h maps APIENTRY/EXPENTRY -> _syscall for non-IBMC compilers, but
+#     GCC 9.2 dropped the _syscall keyword (GCC 4.9.2 still had it).  _System is
+#     the identical OS/2 "system" linkage under modern kLIBC, so remap it here;
+#     this keeps the calling-convention ABI correct for every DosXxx/WinXxx call.
+#   Verified minimal: with INCL_32 the old _far=/_near=/_pascal= empties are no
+#   longer needed (probe3 (B) compiled clean without them).
 TEMPLATE_OdinCxx_DEFS.debug = DEBUG
 TEMPLATE_OdinCxx_LDFLAGS    = -Zlinker '"DISABLE 1121"'
 
@@ -331,25 +324,39 @@ PATH_TOOL_ALP := alp.exe
 endif
 endif
 
-ifeq ($(PATH_TOOL_JWASM),)
-PATH_TOOL_JWASM := jwasm.exe
-endif
-
-ifneq ($(PATH_SDK_OS2TK4),)
 #
-# We can't add Toolkit includes in _INCS (it will cause them to be searched
+# We can't add Toolkit includes in _INCS (it will casuse them to be searched
 # before GCC headers and lead to conflicts), so use -idirafter.
 #
+ifneq ($(PATH_SDK_OS2TK4),)
 TEMPLATE_OdinCxx_CFLAGS    += -idirafter $(PATH_SDK_OS2TK4)/h
 TEMPLATE_OdinCxx_CXXFLAGS  += -idirafter $(PATH_SDK_OS2TK4)/h
+else
+# Assume os2tk45-headers RPM
+TEMPLATE_OdinCxx_CFLAGS    += -idirafter /@unixroot/usr/include/os2tk45
+TEMPLATE_OdinCxx_CXXFLAGS  += -idirafter /@unixroot/usr/include/os2tk45
 endif
 
 #
-# If DBG_CON is defined, jam it in to globally enable simple console logging.
-# If not, then per source console logging can be enabled by defining DBG_CON
-# _before_ the inclusion of the <misc.h> header.
+# GCC 9.2 un-rot: this Wine-derived codebase (GCC 4.9.2 era) has many braced
+# initializers of byte/data tables with values 128..255 stored into (signed)
+# char.  C++11 makes such narrowing conversions a hard error; older GCC allowed
+# them.  Demote back to allowed globally rather than editing dozens of tables.
 #
-ifneq ($(flavor DBG_CON),undefined)
-TEMPLATE_OdinCxx_CFLAGS    += -DDBG_CON
-TEMPLATE_OdinCxx_CXXFLAGS  += -DDBG_CON
-endif
+TEMPLATE_OdinCxx_CFLAGS    += -Wno-narrowing
+TEMPLATE_OdinCxx_CXXFLAGS  += -Wno-narrowing
+
+#
+# KNOWN COMPROMISE (build-revival): -fpermissive for C++.
+# Odin's sources assume PSZ is plain `char *` (OS2EMX_PLAIN_CHAR), e.g.
+# strcpy(PSZ,...), DosCopy((PSZ)p,...) into `const char *` wrappers, and pass
+# int* where modern sockets want socklen_t*.  On this VM the Toolkit headers in
+# /usr/include (loose 2013 copies, not owned by any RPM, shadowing the packaged
+# /usr/include/os2tk45 set) define PSZ as `unsigned char *` and ignore
+# OS2EMX_PLAIN_CHAR, so ~300 such pointer-signedness conversions became hard
+# errors.  They are all "[-fpermissive]" diagnostics.  Casting each by hand is
+# not realistic; downgrade them to warnings.  Revisit once the header set is
+# sorted out (an experiment putting os2tk45 first made things worse: it shadows
+# libc's sys/cdefs.h) -- see odin-changed-files/README.md.
+#
+TEMPLATE_OdinCxx_CXXFLAGS  += -fpermissive

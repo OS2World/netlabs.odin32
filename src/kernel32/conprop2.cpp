@@ -98,11 +98,11 @@ DWORD ConsolePropertyDefault(PICONSOLEOPTIONS pConsoleOptions)
 
   pConsoleOptions->fTerminateAutomatically = FALSE;
   pConsoleOptions->fSpeakerEnabled         = TRUE;
-  pConsoleOptions->fSetWindowPosition      = TRUE;
+  pConsoleOptions->fSetWindowPosition      = FALSE;
   pConsoleOptions->coordDefaultPosition.X  = 0;
   pConsoleOptions->coordDefaultPosition.Y  = 0;
   pConsoleOptions->coordDefaultSize.X      = 80;
-  pConsoleOptions->coordDefaultSize.Y      = 20;
+  pConsoleOptions->coordDefaultSize.Y      = 25;
   pConsoleOptions->fQuickInsert            = FALSE;
   pConsoleOptions->fInsertMode             = FALSE;
   pConsoleOptions->fMouseActions           = FALSE;
